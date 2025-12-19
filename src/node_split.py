@@ -1,3 +1,6 @@
+
+from enum import Enum
+
 from textnode import TextNode, TextType
 import re
 
@@ -6,6 +9,14 @@ delimiters = {
     "_": TextType.ITALIC,
     "**": TextType.BOLD
 }
+
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    QUOTE = "quote"
+    CODE = "code"
+    UNORDERED_LIST = "unordered_list"
+    ORDERED_LIST = "ordered_list"
 
 def extract_markdown_images(text):
     pattern = r'!\[([^\]]+)\]\((https?://[^\)]+)\)'
@@ -112,3 +123,25 @@ def text_to_textnodes(text):
     nodes = split_nodes_image(nodes)
     nodes = split_nodes_link(nodes)
     return nodes
+
+def block_to_block_type(block):
+    if block.startswith("# ") or block.startswith("## ") or block.startswith("### ") or block.startswith("#### ") or block.startswith("##### ") or block.startswith("###### "):
+        return BlockType.HEADING
+    elif block.startswith(">"):
+        return BlockType.QUOTE
+    elif block.startswith("- "):
+        split_lines = block.split("\n")
+        if all(line.startswith("- ") for line in split_lines):
+            return BlockType.UNORDERED_LIST
+        else:
+            return BlockType.PARAGRAPH
+    elif block[0:2].isdigit() and block[2:4] == ". ":
+        split_lines = block.split("\n")
+        if all(line[0:2].isdigit() and line[2:4] == ". " for line in split_lines):
+            return BlockType.ORDERED_LIST
+        else:
+            return BlockType.PARAGRAPH
+    elif block.startswith("```") and block.endswith("```"):
+        return BlockType.CODE
+    else:
+        return BlockType.PARAGRAPH
